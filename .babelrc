@@ -5,6 +5,6 @@
     "transform-node-env-inline"
   ],
   "presets": [
-    "es2015"
+    "env"
   ]
 }

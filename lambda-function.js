@@ -1,10 +1,51 @@
 var express = require('express');
-import { authflow } from 'react-authenticate/lib/AuthUtils'
 var options = require('./variables.js')
 var axios = require('axios');
+import jwt from 'jsonwebtoken'
+import jwksClient from 'jwks-rsa'
 
 const authDomain = options.auth0Domain
 const endpoints = options.endpoints
+
+const AUTHO_ALG = options.auth0Algorithm
+const CLAIM_NAMESPACE = options.claimNamespace
+const JWKS_URI = options.jwksUri
+
+var getSigningKey = function(kid) {
+  return new Promise((resolve, reject) => {
+    const jwk = jwksClient({
+      cache: true,
+      cacheMaxEntries: 5,
+      jwksUri: JWKS_URI,
+    })
+
+    jwk.getSigningKey(kid, (err, results) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve(results)
+      }
+    })
+  })
+}
+
+var authflow = function(token) {
+  const decoded = jwt.decode(token, { complete: true })
+  const payload = decoded.payload
+  const kid = decoded.header.kid
+
+  return getSigningKey(kid).then(key => {
+    return new Promise((resolve, reject) => {
+      const signingKey = key.publicKey || key.rsaPublicKey
+      try {
+        jwt.verify(token, signingKey, { algorithms: [AUTHO_ALG] })
+        resolve(payload[CLAIM_NAMESPACE])
+      } catch (err) {
+        reject(err)
+      }
+    })
+  })
+}
 
 if(process.env.NODE_ENV == 'development') {
 
@@ -37,9 +78,9 @@ if(process.env.NODE_ENV == 'development') {
     }).catch(error =>{
       console.log(error)
       var output = generatePolicy('user', 'Deny', 'event.methodArn')
-      console.log(output.context)
+      console.log(output)
     })
-  app.get('/', (req, res) => res.send('Hello World!')); app.listen(3002); console.log('listening on 3002'); //express
+  app.get('/', (req, res) => res.send('Hello World!')); app.listen(3002); console.log('listening on 3002'); 
 }
 
 
@@ -48,7 +89,7 @@ if(process.env.NODE_ENV == 'production') {
   exports.handle = function(event, context, callback) {
 
     const liveToken = event.authorizationToken
-    const accessToken = options.devAuthToken
+    const accessToken = options.devAuthToken // coming soon
 
     let requests = []
 
@@ -66,10 +107,14 @@ if(process.env.NODE_ENV == 'production') {
 
     authflow(liveToken)
      .then(authz => {
-       axios.all([...requests])
-        .then(axios.spread(function (...responses) {
-          callback(null, generatePolicy('user', 'Allow', event.methodArn, responses, endpoints))
-        }))
+       if (accessToken) {
+         axios.all([...requests])
+          .then(axios.spread(function (...responses) {
+            callback(null, generatePolicy('user', 'Allow', event.methodArn, responses, endpoints))
+          }))
+       } else {
+         callback(null, generatePolicy('user', 'Allow', event.methodArn))
+       }
     }).catch(error =>{
       console.log(error)
       callback(null, generatePolicy('user', 'Deny', event.methodArn));

@@ -1,4 +1,4 @@
-bucket=buildingperformance.arup.digital
+bucket=mybucket
 lambda=test-lambda-authoriser
 key_inside_bucket=assets
 region=ap-southeast-2

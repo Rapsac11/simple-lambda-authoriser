@@ -1,8 +1,9 @@
 module.exports = {
-  endpoints: [
-    "userinfo"
-  ],
-  auth0Domain: "arupdigital.au.auth0.com",
-  devAuthToken: "",
-  devToken: ""
+  endpoints: [],
+  auth0Algorithm: 'RS256',
+  claimNamespace: '',
+  jwksUri: '',
+  auth0Domain: '',
+  devAuthToken: '',
+  devToken: ''
 }

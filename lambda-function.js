@@ -1,43 +1,85 @@
 var express = require('express');
-import { isIn, getTokenHeader, authflow } from 'react-authenticate/lib/AuthUtils'
+import { authflow } from 'react-authenticate/lib/AuthUtils'
+var options = require('./variables.js')
 var axios = require('axios');
 
-//var app = express();
+const authDomain = options.auth0Domain
+const endpoints = options.endpoints
 
+if(process.env.NODE_ENV == 'development') {
 
-exports.handle = function(event, context, callback) {
+  var app = express();
 
-//let something = e['queryStringParameters']['param']
-const token = `eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik9UTXhNVEZGUVVORE56TXpRakZFTkVKRk9UbENNakUwUlVVNU1rTkVSRVJET1RFeE16TkNNQSJ9.eyJodHRwOi8vYXV0aHouYXJ1cC5kaWdpdGFsL2F1dGhvcml6YXRpb24iOnsiZ3JvdXBzIjpbIkJIV1AiLCJQT1JUQUwiXSwicm9sZXMiOltdLCJwZXJtaXNzaW9ucyI6W119LCJodHRwOi8vdXNlcm1ldGEuYXJ1cC5kaWdpdGFsL3VzZXJfbWV0YWRhdGEiOnt9LCJpc3MiOiJodHRwczovL2FydXBkaWdpdGFsLmF1LmF1dGgwLmNvbS8iLCJzdWIiOiJ3YWFkfGlYblQ5ZFhUeVVpTl9pem5zSlFBM3J0eW1UZGJ4Xy1ySnVIM2J4VEdreUEiLCJhdWQiOiJBMWliNnZwR3ZQNjNIOFpveVZSNjJaRkUxTlF6SjhWNyIsImlhdCI6MTUzNjYzNjM3NiwiZXhwIjoxNTM2NjcyMzc2LCJhdF9oYXNoIjoibDhYTEFuR0dsWWVTMkFfNzZTZmFVZyIsIm5vbmNlIjoiSFkuR2lHVHVGSjUwNU8uZUs1eUhkaDFuM0sten5ac2wifQ.X3jtXHBwlfJWo88Ngs8J4DtsmX5h02OTBSzFpCkApbEL8aWP20IHkyBXdVWouDptsSAU5wrmEv9WDCgHpnQzG46WIEq-pMgJ3TaySe2mexv9isnq4Xwf_qwZxgJswV3vMrHbYDApNa00uFfHj4idTYxPbUDEbQ5-DpM8mw2WNo1UNm_GmSGWu23E8nr37s5jErCs4v20K_FMOjqz_zPeGulO6MGsgydsMbPBGCTHbLs4t6hLGP8xIBjb3dhrz2GJGMnVob-JT8hTa7BTmNkEhY1PLQTdXe4uck7cYEhFg2CNYRyYKttt5zIEn1TrnhjRwXwf5TtobBveAZ_2mJFO8g`
+  const liveToken = options.devToken
+  const accessToken = options.devAuthToken
 
-const liveToken = event.authorizationToken
-//const liveToken = token
-const accessToken = "5pgStrPdYnBVQGOzVsLQzcx4NTGPpv6_"
-const authDomain = "arupdigital.au.auth0.com"
-const endpoint = "/userinfo"
+  let requests = []
 
-authflow(liveToken)
-   .then(authz => {
-    console.log(authz)
-    axios({
+  endpoints.map(endpoint => {
+    requests.push(
+      axios({
         method: 'get',
-        url: 'https://'+ authDomain + endpoint,
+        url: 'https://'+ authDomain + '/' + endpoint,
         headers: {
           'Authorization': 'Bearer '+ accessToken
         }
       })
-      .then(function(response){
-        callback(null, generatePolicy('user', 'Allow', event.methodArn, response));
-      })
-  }).catch(error =>{
-    console.log(error)
-    callback(null, generatePolicy('user', 'Deny', event.methodArn));
+    )
   })
 
+  authflow(liveToken)
+     .then(authz => {
+       axios.all([...requests])
+        .then(axios.spread(function (...responses) {
+          var output = generatePolicy('user', 'Allow', 'event.methodArn', responses, endpoints)
+          console.log(output)
+        }))
+    }).catch(error =>{
+      console.log(error)
+      var output = generatePolicy('user', 'Deny', 'event.methodArn')
+      console.log(output.context)
+    })
+  app.get('/', (req, res) => res.send('Hello World!')); app.listen(3002); console.log('listening on 3002'); //express
+}
 
-} //end of lambda
 
-var generatePolicy = function(principalId, effect, resource) {
+if(process.env.NODE_ENV == 'production') {
+
+  exports.handle = function(event, context, callback) {
+
+    const liveToken = event.authorizationToken
+    const accessToken = options.devAuthToken
+
+    let requests = []
+
+    endpoints.map(endpoint => {
+      requests.push(
+        axios({
+          method: 'get',
+          url: 'https://'+ authDomain + '/' + endpoint,
+          headers: {
+            'Authorization': 'Bearer '+ accessToken
+          }
+        })
+      )
+    })
+
+    authflow(liveToken)
+     .then(authz => {
+       axios.all([...requests])
+        .then(axios.spread(function (...responses) {
+          callback(null, generatePolicy('user', 'Allow', event.methodArn, responses, endpoints))
+        }))
+    }).catch(error =>{
+      console.log(error)
+      callback(null, generatePolicy('user', 'Deny', event.methodArn));
+    })
+
+  }
+
+}
+
+var generatePolicy = function(principalId, effect, resource, metadata, requests) {
     var authResponse = {};
 
     authResponse.principalId = principalId;
@@ -53,14 +95,17 @@ var generatePolicy = function(principalId, effect, resource) {
         authResponse.policyDocument = policyDocument;
     }
 
-    // Optional output with custom properties of the String, Number or Boolean type.
-    authResponse.context = {
-        "userinfo": resource
-    };
+    authResponse.context = {};
+
+    if (metadata) {
+      metadata.map((item, index) =>{
+        if(requests[index] == 'userinfo') { // temporary, not clean - authResponse.context can only be string, bool, or number (no objects)
+          authResponse.context[(requests[index] + '-' + 'name')] = item.data.name
+          authResponse.context[(requests[index] + '-' + 'firstname')] = item.data.given_name
+          authResponse.context[(requests[index] + '-' + 'lastname')] = item.data.family_name
+          authResponse.context[(requests[index] + '-' + 'email')] = item.data.nickname
+        }
+      })
+    }
     return authResponse;
 }
-
-
-//app.get('/', (req, res) => res.send('Hello World!'))
-//app.listen(3002);
-//console.log('listening on 3002');

@@ -4,8 +4,8 @@
   "description": "Sample description",
   "main": "./index.js",
   "scripts": {
-    "dev": "babel lambda-function.js --out-file local-index.js && node local-index.js",
-    "build": "babel lambda-function.js --out-file index.js && zip authoriser.zip index.js && zip -ur authoriser.zip node_modules && aws s3 cp authoriser.zip s3://buildingperformance.arup.digital/assets/ --region ap-southeast-2 && aws lambda update-function-code --function-name test-lambda-authoriser --s3-bucket buildingperformance.arup.digital --s3-key assets/authoriser.zip  --region ap-southeast-2 && rm -rf authoriser.zip"
+    "dev": "cross-env NODE_ENV=development bash ./dev.sh",
+    "build": "cross-env NODE_ENV=production bash ./build.sh"
   },
   "author": "CJ",
   "license": "ISC",
@@ -21,11 +21,13 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-plugin-transform-decorators": "^6.24.1",
-    "babel-plugin-transform-decorators-legacy": "^1.3.4",
+    "babel-plugin-transform-es2015-destructuring": "^6.23.0",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.3",
+    "babel-plugin-transform-node-env-inline": "^0.4.3",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.0",
-    "babel-register": "^6.26.0"
+    "babel-register": "^6.26.0",
+    "cross-env": "^5.2.0"
   }
 }

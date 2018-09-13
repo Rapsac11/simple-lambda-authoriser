@@ -4,6 +4,6 @@ module.exports = {
   claimNamespace: '',
   jwksUri: '',
   auth0Domain: '',
-  devAuthToken: '',
+  devAccessToken: '',
   devToken: ''
 }

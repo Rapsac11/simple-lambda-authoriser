@@ -1,5 +1,5 @@
 var express = require('express');
-var options = require('./variables.js')
+var options = require('./variables-request.js')
 var axios = require('axios');
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
@@ -52,7 +52,7 @@ if(process.env.NODE_ENV == 'development') {
   var app = express();
 
   const liveToken = options.devToken
-  const accessToken = options.devAuthToken
+  const accessToken = options.devAccessToken
 
   let requests = []
 
@@ -80,7 +80,7 @@ if(process.env.NODE_ENV == 'development') {
       var output = generatePolicy('user', 'Deny', 'event.methodArn')
       console.log(output)
     })
-  app.get('/', (req, res) => res.send('Hello World!')); app.listen(3002); console.log('listening on 3002'); 
+  app.get('/', (req, res) => res.send('Hello World!')); app.listen(3002); console.log('listening on 3002');
 }
 
 
@@ -88,8 +88,15 @@ if(process.env.NODE_ENV == 'production') {
 
   exports.handle = function(event, context, callback) {
 
-    const liveToken = event.authorizationToken
-    const accessToken = options.devAuthToken // coming soon
+    var headers = event.headers;
+    var requestContext = event.requestContext;
+
+    if(!headers.authtoken) {
+      callback(null, generatePolicy('user', 'Deny', event.methodArn));
+    }
+
+    var liveToken = headers.authtoken
+    var accessToken = headers.accesstoken
 
     let requests = []
 
@@ -104,7 +111,6 @@ if(process.env.NODE_ENV == 'production') {
         })
       )
     })
-
     authflow(liveToken)
      .then(authz => {
        if (accessToken) {

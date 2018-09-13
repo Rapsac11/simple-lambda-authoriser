@@ -5,7 +5,8 @@
   "main": "./index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development bash ./dev.sh",
-    "build": "cross-env NODE_ENV=production bash ./build.sh"
+    "build": "cross-env NODE_ENV=production bash ./build.sh",
+    "build-request": "cross-env NODE_ENV=production bash ./build-request.sh"
   },
   "author": "CJ",
   "license": "ISC",

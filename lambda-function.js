@@ -1,5 +1,5 @@
 var express = require('express');
-var options = require('./variables-request.js')
+var options = require('./variables.js')
 var axios = require('axios');
 import jwt from 'jsonwebtoken'
 import jwksClient from 'jwks-rsa'
@@ -80,7 +80,7 @@ if(process.env.NODE_ENV == 'development') {
       var output = generatePolicy('user', 'Deny', 'event.methodArn')
       console.log(output)
     })
-  app.get('/', (req, res) => res.send('Hello World!')); app.listen(3002); console.log('listening on 3002');
+  app.get('/', (req, res) => res.send('Hello World!')); app.listen(options.devPort); console.log('listening on ' + options.devPort);
 }
 
 

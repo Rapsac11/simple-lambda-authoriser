@@ -1,12 +1,11 @@
 {
   "name": "lambda-authoriser",
   "version": "1.0.0",
-  "description": "Sample description",
+  "description": "A simple Lambda function to control access to an API Gateway resource",
   "main": "./index.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development bash ./dev.sh",
-    "build": "cross-env NODE_ENV=production bash ./build.sh",
-    "build-request": "cross-env NODE_ENV=production bash ./build-request.sh"
+    "build": "cross-env NODE_ENV=production bash ./build.sh"
   },
   "author": "CJ",
   "license": "ISC",
@@ -28,7 +27,6 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.0",
-    "babel-register": "^6.26.0",
     "cross-env": "^5.2.0"
   }
 }

@@ -1,5 +1,5 @@
-bucket=my_bucket
-lambda=test-lambda-authoriser-request
+bucket=my.bucket.to.store.function.code
+lambda=some-premade-nodejs-lambda-function
 key_inside_bucket=assets
 region=ap-southeast-2
 

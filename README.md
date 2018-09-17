@@ -3,7 +3,7 @@ A simple Lambda function to control access to an API Gateway resource
 
 Implementation of https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html
 
-Usage
+Install
 =============
 ```
 git clone https://github.com/Rapsac11/simple-lambda-authoriser.git
